@@ -1,5 +1,19 @@
 # Visiting the Forest Stream API
 
+## Running the API
+
+Ensure that `uvicorn` is installed:
+```
+pip install uvicorn
+```
+and added to `PATH`. Then from the project directory, run
+
+```
+uvicorn app.main:app
+```
+
+The `--reload` option can be added so when changes are made, hitting save automatically updates the server.
+
 
 
 ## Getting started
