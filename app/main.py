@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from fastapi.staticfiles import StaticFiles
+# from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 
 from contextlib import asynccontextmanager
 import os
@@ -13,7 +14,7 @@ from . import models
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 def get_db():
     db = SessionLocal()
@@ -38,27 +39,30 @@ async def lifespan(app: FastAPI):
     print(len(songs))
 
     if num_sound != len(songs):      #static file number == db number
-        print(os.listdir())
         for sound in os.listdir():
-
             stringS = sound.replace(".WAV", "").split("_")
-            print(stringS)
             timeStampS = datetime.datetime(int(stringS[0][:4]), int(stringS[0][4:6]), int(stringS[0][6:]), int(stringS[1][:2]), int(stringS[1][2:4]), int(stringS[1][4:]))
-            print(timeStampS)
             orderS = stringS[2]  #which one from the timestamp ordering
             locationS = stringS[3]   #location it's from
             if db.query(models.audioFile).filter_by(time=timeStampS, order=orderS, location=locationS).count() == 0:
                 completeJ = {"time": timeStampS, "order":orderS, "location":locationS, "url":"/tenSecChunks/{}".format(sound)}
-                print(completeJ)
                 db.add(models.audioFile(**completeJ))
             db.commit() 
     ### added to db, NOW: table for stories?
-        pass    #populate db
+    # I havent dealt with deletion of songs, only adding
+    db.close()
     yield
 
 app = FastAPI(lifespan=lifespan)
 
+@app.get("/playIt")
+def tryPlay():
+    def iterfile():
+        p = "C:/Part 1B/GroupProject/forestAPI/visiting-the-forest-stream-api/static/tenSecChunks/20230512_102258_10_1.WAV"
+        with open(p, mode="rb") as file_like:
+            yield from file_like
 
+    return StreamingResponse(iterfile(), media_type="audio/WAV")
 
 @app.get("/")
 def home(
