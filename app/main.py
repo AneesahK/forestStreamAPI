@@ -1,20 +1,23 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-# from fastapi.staticfiles import StaticFiles
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse
 
 from contextlib import asynccontextmanager
 import os
 import datetime
+from pathlib import Path
 
 from .database import SessionLocal, engine
 from . import models
 
 # Use migrations normally
-models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+app_audio = FastAPI()
+
+models.Base.metadata.create_all(bind=engine)
 
 def get_db():
     db = SessionLocal()
@@ -22,49 +25,54 @@ def get_db():
         yield db
     finally:
         db.close()
+        
 
-        ##12.10 video
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+async def initialize_db(app: FastAPI):
     db = SessionLocal()
     num_sound = db.query(models.audioFile).count()
 
-    current_path = os.getcwd()  # Get current working directory
-    # parent_path = os.path.dirname(current_path)  # Move up one level
-    target_path = os.path.join("static", "tenSecChunks")  # Construct the path
+    current_path = os.getcwd()
+    target_path = os.path.join("static", "tenSecChunks")
     os.chdir(target_path)
-    print(target_path)
     songs = os.listdir()
-    print(len(songs))
 
-    if num_sound != len(songs):      #static file number == db number
-        for sound in os.listdir():
+    if num_sound != len(songs):
+        for sound in songs:
             stringS = sound.replace(".WAV", "").split("_")
-            offsetTime = int(stringS[2])-10  #10 is the first one, so -10
+            offsetTime = int(stringS[2]) - 10
             timeStampS = datetime.datetime(int(stringS[0][:4]), int(stringS[0][4:6]), int(stringS[0][6:]), int(stringS[1][:2]), int(stringS[1][2:4]), int(stringS[1][4:]))
             timeStampS = timeStampS + datetime.timedelta(seconds=offsetTime)
-            
-            locationS = stringS[3]   #location it's from
-            if db.query(models.audioFile).filter_by(uri="/tenSecChunks/{}".format(sound)).count() == 0:
-                completeJ = {"timeStamp": timeStampS, "uri":"/tenSecChunks/{}".format(sound), "location":locationS}
+            locationS = stringS[3]
+
+            if db.query(models.audioFile).filter_by(uri=f"/tenSecChunks/{sound}").count() == 0:
+                completeJ = {"timeStamp": timeStampS, "uri": f"/tenSecChunks/{sound}", "location": locationS}
                 db.add(models.audioFile(**completeJ))
-            db.commit() 
-    ### added to db, NOW: table for stories?
-    # I havent dealt with deletion of songs, only adding
+                db.commit()
+
     db.close()
+    os.chdir(current_path)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await initialize_db(app)
     yield
 
 app = FastAPI(lifespan=lifespan)
 
-@app.get("/playIt")
-def tryPlay():
-    def iterfile():
-        p = "C:/Part 1B/GroupProject/forestAPI/visiting-the-forest-stream-api/static/tenSecChunks/20230512_102258_10_1.WAV"
-        with open(p, mode="rb") as file_like:
-            yield from file_like
+app.mount("/audio", StaticFiles(directory=("static/tenSecChunks")), name="audio")
 
-    return StreamingResponse(iterfile(), media_type="audio/WAV")
+# @app.get("/audio/{file_name}")
+# async def get_audio(file_name: str):
+#     return FileResponse(f"static/tenSecChunks/{file_name}")
+
+# @app.get("/playIt")
+# def tryPlay():
+#     def iterfile():
+#         p = "C:/Part 1B/GroupProject/forestAPI/visiting-the-forest-stream-api/static/tenSecChunks/20230512_102258_10_1.WAV"
+#         with open(p, mode="rb") as file_like:
+#             yield from file_like
+
+#     return StreamingResponse(iterfile(), media_type="audio/WAV")
 
 @app.get("/")
 def home(
