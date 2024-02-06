@@ -60,6 +60,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.mount("/audio", StaticFiles(directory=("static/tenSecChunks")), name="audio")
+app.mount("/story", StaticFiles(directory=("static/stories")), name="story")
 
 # @app.get("/audio/{file_name}")
 # async def get_audio(file_name: str):
