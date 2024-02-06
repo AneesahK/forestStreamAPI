@@ -41,11 +41,13 @@ async def lifespan(app: FastAPI):
     if num_sound != len(songs):      #static file number == db number
         for sound in os.listdir():
             stringS = sound.replace(".WAV", "").split("_")
+            offsetTime = int(stringS[2])-10  #10 is the first one, so -10
             timeStampS = datetime.datetime(int(stringS[0][:4]), int(stringS[0][4:6]), int(stringS[0][6:]), int(stringS[1][:2]), int(stringS[1][2:4]), int(stringS[1][4:]))
-            orderS = stringS[2]  #which one from the timestamp ordering
+            timeStampS = timeStampS + datetime.timedelta(seconds=offsetTime)
+            
             locationS = stringS[3]   #location it's from
-            if db.query(models.audioFile).filter_by(time=timeStampS, order=orderS, location=locationS).count() == 0:
-                completeJ = {"time": timeStampS, "order":orderS, "location":locationS, "url":"/tenSecChunks/{}".format(sound)}
+            if db.query(models.audioFile).filter_by(uri="/tenSecChunks/{}".format(sound)).count() == 0:
+                completeJ = {"timeStamp": timeStampS, "uri":"/tenSecChunks/{}".format(sound), "location":locationS}
                 db.add(models.audioFile(**completeJ))
             db.commit() 
     ### added to db, NOW: table for stories?
