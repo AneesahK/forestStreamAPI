@@ -10,7 +10,7 @@ class audioFile(Base):
     __tablename__ = "audioFiles"
 
     id = Column(Integer, primary_key=True, index=True)
-    timeStamp = Column(TIMESTAMP)# default=datetime.utcnow)  #yr,month,day,hr,min,second
+    timeStamp = Column(TIMESTAMP, default=datetime.utcnow)  #yr,month,day,hr,min,second
     # date = Column(TIMESTAMP)
     # order = Column(Integer) #first in timestamp, or second etc
     uri = Column(String, unique=True)   #url to image

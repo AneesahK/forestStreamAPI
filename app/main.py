@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 from fastapi.responses import FileResponse
@@ -37,6 +38,7 @@ async def initialize_db(app: FastAPI):
     songs = os.listdir()
 
     if num_sound != len(songs):
+        # doesn't consider deletion of tracks and then addiiton, so will treat as number
         for sound in songs:
             stringS = sound.replace(".WAV", "").split("_")
             offsetTime = int(stringS[2]) - 10
@@ -44,8 +46,8 @@ async def initialize_db(app: FastAPI):
             timeStampS = timeStampS + datetime.timedelta(seconds=offsetTime)
             locationS = stringS[3]
 
-            if db.query(models.audioFile).filter_by(uri=f"/tenSecChunks/{sound}").count() == 0:
-                completeJ = {"timeStamp": timeStampS, "uri": f"/tenSecChunks/{sound}", "location": locationS}
+            if db.query(models.audioFile).filter_by(uri="/audio/{}".format(sound)).count() == 0:
+                completeJ = {"timeStamp": timeStampS, "uri": "/audio/{}".format(sound), "location": locationS}
                 db.add(models.audioFile(**completeJ))
                 db.commit()
 
@@ -74,6 +76,40 @@ app.mount("/story", StaticFiles(directory=("static/stories")), name="story")
 #             yield from file_like
 
 #     return StreamingResponse(iterfile(), media_type="audio/WAV")
+
+@app.get("/getaudiofiles")
+def getAudioFiles(
+    startTime: int,     # 110207 -> 11.02 am 7 seconds
+    duration: int,      # 60 -> 60 mins = 1hr
+    locationG: int,      # 2 -> location number
+    db: Session = Depends(get_db)   #access to db session
+):
+    start = datetime.datetime.now()
+    start = start.replace(hour=int(str(startTime)[0:2]), minute=int(str(startTime)[2:4]), second=int(str(startTime)[4:]), microsecond=0)
+    end = start + datetime.timedelta(minutes=duration)  #adding minutes
+    endString = end.strftime('%Y-%m-%d %H%M%S')
+    endString = endString.split(" ")[1]
+
+    query = db.query(
+        models.audioFile.uri
+        ).filter(
+            func.extract('hour', models.audioFile.timeStamp) * 3600 +
+            func.extract('minute', models.audioFile.timeStamp) * 60 +
+            func.extract('second', models.audioFile.timeStamp) >= int(str(startTime)[0:2]) *3600 + int(str(startTime)[2:4]) * 60  + int(str(startTime)[4:]), 
+            func.extract('hour', models.audioFile.timeStamp) * 3600 +
+            func.extract('minute', models.audioFile.timeStamp) * 60 +
+            func.extract('second', models.audioFile.timeStamp) <= int(str(endString)[0:2]) *3600 + int(str(endString)[2:4]) * 60  + int(str(endString)[4:]),
+            models.audioFile.location == locationG
+            ).all()
+    
+    print(query)
+    for q in query:
+        print(q[0])
+
+    result = [{"uri":q[0]} for q in query]
+
+    return result
+
 
 @app.get("/")
 def home(
