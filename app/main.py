@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import os
 import datetime
-from pathlib import Path
+import json
 
 from .database import SessionLocal, engine
 from . import models
@@ -39,6 +39,7 @@ async def initialize_dbAudio(app: FastAPI):
 
     if num_sound != len(songs):
         # doesn't consider deletion of tracks and then addiiton, so will treat as number
+        # if you do, delete whole table
         for sound in songs:
             stringS = sound.replace(".WAV", "").split("_")
             offsetTime = int(stringS[2]) - 10
@@ -58,22 +59,23 @@ async def initialize_dbStory(app: FastAPI):
     db = SessionLocal()
     num_sound = db.query(models.storyFile).count()
 
+    with open('category.json') as f:
+        d = json.load(f)
+    print(len(d))
+
+
     current_path = os.getcwd()
     target_path = os.path.join("static", "stories")
     os.chdir(target_path)
     sto = os.listdir()
 
     if num_sound != len(sto):
-        # doesn't consider deletion of tracks and then addiiton, so will treat as number
         for p in sto:
             stringS = p.split(".")[0]           ##names with no dots
-            # offsetTime = int(stringS[2]) - 10
-            # timeStampS = datetime.datetime(int(stringS[0][:4]), int(stringS[0][4:6]), int(stringS[0][6:]), int(stringS[1][:2]), int(stringS[1][2:4]), int(stringS[1][4:]))
-            # timeStampS = timeStampS + datetime.timedelta(seconds=offsetTime)
-            # locationS = stringS[3]
+            c = d[stringS.split("_")[-1]]
 
             if db.query(models.storyFile).filter_by(uri="/story/{}".format(p)).count() == 0:
-                completeJ = {"uri":"/story/{}".format(p), "count":int(stringS.split("_")[-1])}
+                completeJ = {"uri":"/story/{}".format(p), "count":int(stringS.split("_")[-2]), "category":c}
                 db.add(models.storyFile(**completeJ))
                 db.commit()
 
@@ -91,20 +93,7 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/audio", StaticFiles(directory=("static/tenSecChunks")), name="audio")
 app.mount("/story", StaticFiles(directory=("static/stories")), name="story")
 
-# @app.get("/audio/{file_name}")
-# async def get_audio(file_name: str):
-#     return FileResponse(f"static/tenSecChunks/{file_name}")
-
-# @app.get("/playIt")
-# def tryPlay():
-#     def iterfile():
-#         p = "C:/Part 1B/GroupProject/forestAPI/visiting-the-forest-stream-api/static/tenSecChunks/20230512_102258_10_1.WAV"
-#         with open(p, mode="rb") as file_like:
-#             yield from file_like
-
-#     return StreamingResponse(iterfile(), media_type="audio/WAV")
-
-@app.get("/getaudiofiles")
+@app.get("/getAudioFiles")
 def getAudioFiles(
     startTime: int,     # 110207 -> 11.02 am 7 seconds
     duration: int,      # 60 -> 60 mins = 1hr
@@ -133,10 +122,63 @@ def getAudioFiles(
     for q in query:
         print(q[0])
 
-    result = [{"uri":q[0]} for q in query]
+    # result = [{"uri":q[0]} for q in query]
+    result = [q[0] for q in query]
 
-    return result
+    return result       #list of dict, NOW LIST
 
+@app.get("/getAllStory")    #gives whole branch
+def home(
+    cate: int,          #category of the 4 in json
+    prizeCount: int,     #Counter for the prize count they are on
+    db: Session = Depends(get_db)   #access to db session
+):
+    with open('category.json') as f:
+        d = json.load(f)
+        categoryWord = d[str(cate)]
+    
+    query = db.query(
+        models.storyFile.uri, models.storyFile.count
+        ).filter(
+            models.storyFile.category==categoryWord,
+            models.storyFile.count<=prizeCount
+            ).all()
+    
+    print(query)
+    result = {}
+    for item in query:
+        uri = item[0]
+        prize = item[1]
+        if prize in result:
+            result[prize].append(uri)
+        else:
+            result[prize] = [uri]
+    
+    print(result)
+    
+    return result       #returns a dict with key as prize count, and value is list of uris associated
+
+@app.get("/getAStory")    #gives whole branch
+def home(
+    cate: int,          #category of the 4 in json
+    prizeCount: int,     #Counter for the prize count they are on
+    db: Session = Depends(get_db)   #access to db session
+):
+    with open('category.json') as f:
+        d = json.load(f)
+        categoryWord = d[str(cate)]
+    
+    query = db.query(
+        models.storyFile.uri, models.storyFile.count
+        ).filter(
+            models.storyFile.category==categoryWord,
+            models.storyFile.count==prizeCount
+            ).all()
+    
+    result = [q[0] for q in query]
+    print(result)
+    
+    return result       #list
 
 @app.get("/")
 def home(

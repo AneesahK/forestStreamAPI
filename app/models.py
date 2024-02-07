@@ -22,3 +22,4 @@ class storyFile(Base):
     id = Column(Integer, primary_key=True, index=True)
     count = Column(Integer)
     uri = Column(String, unique=True)   #url to image
+    category = Column(String)
