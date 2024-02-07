@@ -28,7 +28,7 @@ def get_db():
         db.close()
         
 
-async def initialize_db(app: FastAPI):
+async def initialize_dbAudio(app: FastAPI):
     db = SessionLocal()
     num_sound = db.query(models.audioFile).count()
 
@@ -54,9 +54,36 @@ async def initialize_db(app: FastAPI):
     db.close()
     os.chdir(current_path)
 
+async def initialize_dbStory(app: FastAPI):
+    db = SessionLocal()
+    num_sound = db.query(models.storyFile).count()
+
+    current_path = os.getcwd()
+    target_path = os.path.join("static", "stories")
+    os.chdir(target_path)
+    sto = os.listdir()
+
+    if num_sound != len(sto):
+        # doesn't consider deletion of tracks and then addiiton, so will treat as number
+        for p in sto:
+            stringS = p.split(".")[0]           ##names with no dots
+            # offsetTime = int(stringS[2]) - 10
+            # timeStampS = datetime.datetime(int(stringS[0][:4]), int(stringS[0][4:6]), int(stringS[0][6:]), int(stringS[1][:2]), int(stringS[1][2:4]), int(stringS[1][4:]))
+            # timeStampS = timeStampS + datetime.timedelta(seconds=offsetTime)
+            # locationS = stringS[3]
+
+            if db.query(models.storyFile).filter_by(uri="/story/{}".format(p)).count() == 0:
+                completeJ = {"uri":"/story/{}".format(p), "count":int(stringS.split("_")[-1])}
+                db.add(models.storyFile(**completeJ))
+                db.commit()
+
+    db.close()
+    os.chdir(current_path)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await initialize_db(app)
+    await initialize_dbAudio(app)
+    await initialize_dbStory(app)
     yield
 
 app = FastAPI(lifespan=lifespan)

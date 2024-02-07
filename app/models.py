@@ -11,7 +11,14 @@ class audioFile(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     timeStamp = Column(TIMESTAMP, default=datetime.utcnow)  #yr,month,day,hr,min,second
-    # date = Column(TIMESTAMP)
-    # order = Column(Integer) #first in timestamp, or second etc
     uri = Column(String, unique=True)   #url to image
     location = Column(Integer)  #which sound thing
+
+
+
+class storyFile(Base):
+    __tablename__ = "storyFiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    count = Column(Integer)
+    uri = Column(String, unique=True)   #url to image
