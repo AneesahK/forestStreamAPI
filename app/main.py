@@ -61,7 +61,7 @@ async def initialize_dbStory(app: FastAPI):
 
     with open('category.json') as f:
         d = json.load(f)
-    print(len(d))
+    # print(len(d))
 
 
     current_path = os.getcwd()
@@ -107,7 +107,7 @@ def getAudioFiles(
     endString = endString.split(" ")[1]
 
     query = db.query(
-        models.audioFile.uri
+        models.audioFile.uri,models.audioFile.timeStamp
         ).filter(
             func.extract('hour', models.audioFile.timeStamp) * 3600 +
             func.extract('minute', models.audioFile.timeStamp) * 60 +
@@ -118,14 +118,17 @@ def getAudioFiles(
             models.audioFile.location == locationG
             ).all()
     
-    print(query)
+    result = {}
+    # print(query)
     for q in query:
-        print(q[0])
+        # print(q[1].date())
+        dateOF = q[1].date()
+        if dateOF in result:
+            result[dateOF].append(q[0])
+        else:
+            result[dateOF] = [q[0]]
 
-    # result = [{"uri":q[0]} for q in query]
-    result = [q[0] for q in query]
-
-    return result       #list of dict, NOW LIST
+    return result       #dict of list
 
 @app.get("/getAllStory")    #gives whole branch
 def home(
@@ -144,7 +147,7 @@ def home(
             models.storyFile.count<=prizeCount
             ).all()
     
-    print(query)
+    # print(query)
     result = {}
     for item in query:
         uri = item[0]
@@ -154,7 +157,7 @@ def home(
         else:
             result[prize] = [uri]
     
-    print(result)
+    # print(result)
     
     return result       #returns a dict with key as prize count, and value is list of uris associated
 
@@ -176,7 +179,7 @@ def home(
             ).all()
     
     result = [q[0] for q in query]
-    print(result)
+    # print(result)
     
     return result       #list
 
@@ -184,7 +187,7 @@ def home(
 def home(
     db: Session = Depends(get_db)   #access to db session
 ):
-    f = db.query(models.audioFile).all()
-    print(f)
-    print("hi")
+    # f = db.query(models.audioFile).all()
+    # print(f)
+    # print("hi")
     return {"Success": "connected"}
