@@ -56,6 +56,7 @@ async def initialize_dbAudio(app: FastAPI):
     os.chdir(current_path)
 
 async def initialize_dbStory(app: FastAPI):
+    ### Count is first number, category is the second number
     db = SessionLocal()
     num_sound = db.query(models.storyFile).count()
 
