@@ -3,7 +3,6 @@ from sqlalchemy import Column, Integer, String, TIMESTAMP
 from datetime import datetime
 
 from .database import Base
-# from database import Base
 
 
 class audioFile(Base):
@@ -18,8 +17,9 @@ class audioFile(Base):
 
 class storyFile(Base):
     __tablename__ = "storyFiles"
-
+    
     id = Column(Integer, primary_key=True, index=True)
     count = Column(Integer)
-    uri = Column(String, unique=True)   #url to image
+    imageUri = Column(String, unique=True)   #url to image
+    textUri = Column(String, nullable=True, unique=True)
     category = Column(String)
