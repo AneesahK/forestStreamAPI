@@ -73,6 +73,7 @@ async def initialize_dbStory(app: FastAPI):
         for p in sto:
             stringS = p.split(".")[0]           ##names with no dots
             c = d[stringS.split("_")[-1]]
+            print(p)
 
             if p.split(".")[1] == "txt":
                 typeURI = "textUri"
@@ -85,6 +86,7 @@ async def initialize_dbStory(app: FastAPI):
                 db.commit()
             else:   #already exists
                 db.query(models.storyFile).filter_by(count=int(stringS.split("_")[-2]),category=c).update({typeURI:"/story/{}".format(p)})
+                db.commit()
                 
 
     db.close()
