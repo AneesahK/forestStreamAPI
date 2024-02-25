@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi.staticfiles import StaticFiles
@@ -73,7 +73,6 @@ async def initialize_dbStory(app: FastAPI):
         for p in sto:
             stringS = p.split(".")[0]           ##names with no dots
             c = d[stringS.split("_")[-1]]
-            print(p)
 
             if p.split(".")[1] == "txt":
                 typeURI = "textUri"
@@ -110,41 +109,42 @@ def getAudioFiles(
     locationG: int,      # 2 -> location number
     db: Session = Depends(get_db)   #access to db session
 ):
-    if startTime.isnumeric():
-        # startTime = int(startTime)
-        pass
-    else:
-        return "not valid start time, 6 digits of numbers as string"
-    start = datetime.datetime.now()
-    start = start.replace(hour=int(str(startTime)[0:2]), minute=int(str(startTime)[2:4]), second=int(str(startTime)[4:]), microsecond=0)
-    end = start + datetime.timedelta(minutes=duration)  #adding minutes
-    endString = end.strftime('%Y-%m-%d %H%M%S')
-    endString = endString.split(" ")[1]
-    if start.date()!=end.date():
-        differentDays = True    #goes across 2 days, 11pm 3hrs
-    else:
-        differentDays = False   #single day, 10am 1 hr
+    
+    emptyQuery = True
+    while emptyQuery:
 
-    query = db.query(           #getting all the timestamps for the timeframe
-        func.date(models.audioFile.timeStamp)
-        ).filter(
-            func.extract('hour', models.audioFile.timeStamp) * 3600 +
-            func.extract('minute', models.audioFile.timeStamp) * 60 +
-            func.extract('second', models.audioFile.timeStamp) >= int(str(startTime)[0:2]) *3600 + int(str(startTime)[2:4]) * 60  + int(str(startTime)[4:]), 
-            func.extract('hour', models.audioFile.timeStamp) * 3600 +
-            func.extract('minute', models.audioFile.timeStamp) * 60 +
-            func.extract('second', models.audioFile.timeStamp) <= int(str(endString)[0:2]) *3600 + int(str(endString)[2:4]) * 60  + int(str(endString)[4:]),
-            models.audioFile.location == locationG
-            ).distinct().order_by(func.date(models.audioFile.timeStamp)).all()
+        start = datetime.datetime.now()
+        start = start.replace(hour=int(str(startTime)[0:2]), minute=int(str(startTime)[2:4]), second=int(str(startTime)[4:]), microsecond=0)
+        end = start + datetime.timedelta(minutes=duration)  #adding minutes
+        endString = end.strftime('%Y-%m-%d %H%M%S')
+        endString = endString.split(" ")[1]
+        if start.date()!=end.date():
+            differentDays = True    #goes across 2 days, 11pm 3hrs
+        else:
+            differentDays = False   #single day, 10am 1 hr
 
-    if len(query)==0:   #Alison's random feature
-        # random_entry = db.query(models.audioFile).order_by(func.random()).first()
-        # if not random_entry:
-        #     return "no entries in audio DB"
-        # timeString = int(random_entry.timeStamp.strftime("%H%M%S"))
-        # return getAudioFiles(startTime=timeString, duration=duration, locationG=locationG)
-        return "no song found"
-        
+        query = db.query(           #getting all the timestamps for the timeframe
+            func.date(models.audioFile.timeStamp)
+            ).filter(
+                func.extract('hour', models.audioFile.timeStamp) * 3600 +
+                func.extract('minute', models.audioFile.timeStamp) * 60 +
+                func.extract('second', models.audioFile.timeStamp) >= int(str(startTime)[0:2]) *3600 + int(str(startTime)[2:4]) * 60  + int(str(startTime)[4:]), 
+                func.extract('hour', models.audioFile.timeStamp) * 3600 +
+                func.extract('minute', models.audioFile.timeStamp) * 60 +
+                func.extract('second', models.audioFile.timeStamp) <= int(str(endString)[0:2]) *3600 + int(str(endString)[2:4]) * 60  + int(str(endString)[4:]),
+                models.audioFile.location == locationG
+                ).distinct().order_by(func.date(models.audioFile.timeStamp)).all()
+        print("bye")
+
+
+        if len(query)==0:   #Alison's random feature
+            random_entry = db.query(models.audioFile).order_by(func.random()).first()
+            if not random_entry:
+                return "no entries in audio DB"
+            timeString = (random_entry.timeStamp.strftime("%H%M%S"))
+            startTime = timeString
+        else:
+            emptyQuery = False
     
     if differentDays and len(query)>1:
         query.pop() #getting rid of largest from randomiser, so can't have 11.59pm on the last day, won't cause only 1 min of audio
