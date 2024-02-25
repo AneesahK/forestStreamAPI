@@ -105,11 +105,15 @@ app.mount("/story", StaticFiles(directory=("static/stories")), name="story")
 
 @app.get("/getAudioFiles")      
 def getAudioFiles(
-    startTime: int,     # 110207 -> 11.02 am 7 seconds
+    startTime: str,     # 110207 -> 11.02 am 7 seconds
     duration: int,      # 60 -> 60 mins = 1hr
     locationG: int,      # 2 -> location number
     db: Session = Depends(get_db)   #access to db session
 ):
+    if startTime.isnumeric():
+        startTime = int(startTime)
+    else:
+        return "not valid start time, 6 digits of numbers as string"
     start = datetime.datetime.now()
     start = start.replace(hour=int(str(startTime)[0:2]), minute=int(str(startTime)[2:4]), second=int(str(startTime)[4:]), microsecond=0)
     end = start + datetime.timedelta(minutes=duration)  #adding minutes
