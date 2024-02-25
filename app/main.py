@@ -133,11 +133,12 @@ def getAudioFiles(
             ).distinct().order_by(func.date(models.audioFile.timeStamp)).all()
 
     if len(query)==0:   #Alison's random feature
-        random_entry = db.query(models.audioFile).order_by(func.random()).first()
-        if not random_entry:
-            return "no entries in audio DB"
-        timeString = int(random_entry.timeStamp.strftime("%H%M%S"))
-        return getAudioFiles(startTime=timeString, duration=duration, locationG=locationG)
+        # random_entry = db.query(models.audioFile).order_by(func.random()).first()
+        # if not random_entry:
+        #     return "no entries in audio DB"
+        # timeString = int(random_entry.timeStamp.strftime("%H%M%S"))
+        # return getAudioFiles(startTime=timeString, duration=duration, locationG=locationG)
+        return "no song found"
         
     
     if differentDays and len(query)>1:
