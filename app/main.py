@@ -111,7 +111,8 @@ def getAudioFiles(
     db: Session = Depends(get_db)   #access to db session
 ):
     if startTime.isnumeric():
-        startTime = int(startTime)
+        # startTime = int(startTime)
+        pass
     else:
         return "not valid start time, 6 digits of numbers as string"
     start = datetime.datetime.now()
