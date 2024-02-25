@@ -42,10 +42,12 @@ async def initialize_dbAudio(app: FastAPI):
         # doesn't consider deletion of tracks and then addiiton, so will treat as number
         # if you do, delete whole table
         for sound in songs:
-            stringS = sound.replace(".WAV", "").split("_")
-            offsetTime = int(stringS[2]) - 10
+            stringS = sound.replace(".wav", "").split("_")
+            # offsetTime = int(stringS[2]) - 10
+            offsetTime = int(stringS[2]) - 1    #change for minutes
             timeStampS = datetime.datetime(int(stringS[0][:4]), int(stringS[0][4:6]), int(stringS[0][6:]), int(stringS[1][:2]), int(stringS[1][2:4]), int(stringS[1][4:]))
-            timeStampS = timeStampS + datetime.timedelta(seconds=offsetTime)    #Change this if we change to minute files
+            # timeStampS = timeStampS + datetime.timedelta(seconds=offsetTime)    #Change this if we change to minute files
+            timeStampS = timeStampS + datetime.timedelta(minutes=offsetTime)    #change for minutes
             locationS = stringS[3]
 
             if db.query(models.audioFile).filter_by(uri="/audio/{}".format(sound)).count() == 0:
@@ -133,7 +135,7 @@ def getAudioFiles(
                 func.extract('minute', models.audioFile.timeStamp) * 60 +
                 func.extract('second', models.audioFile.timeStamp) <= int(str(endString)[0:2]) *3600 + int(str(endString)[2:4]) * 60  + int(str(endString)[4:]),
                 models.audioFile.location == locationG
-                ).distinct().order_by(func.date(models.audioFile.timeStamp)).all()
+                ).distinct().order_by(func.date(models.audioFile.timeStamp)).all()  #shows days that have those times
         print("bye")
 
 
@@ -149,10 +151,10 @@ def getAudioFiles(
     if differentDays and len(query)>1:
         query.pop() #getting rid of largest from randomiser, so can't have 11.59pm on the last day, won't cause only 1 min of audio
     
-    chosenDate = str(random.choice(query))
+    chosenDate = str(random.choice(query))      #randomly chooses a day that has that time
     chosenDate = chosenDate.replace("(","").replace("'","").replace(",","").replace(")","")
     chosenDate = chosenDate.split("-")
-    targetDate = datetime.date(int(chosenDate[0]), int(chosenDate[1]), int(chosenDate[2]))
+    targetDate = datetime.date(int(chosenDate[0]), int(chosenDate[1]), int(chosenDate[2]))  #year, month, day
 
     if differentDays:       # cross over night 11.59pm to 1am next day
         secondDay = targetDate + datetime.timedelta(days=1)
@@ -160,7 +162,7 @@ def getAudioFiles(
         query = db.query(           #after start time, before end time
         models.audioFile.uri,models.audioFile.timeStamp
         ).filter(
-            func.date(models.audioFile.timeStamp) == targetDate,
+            func.date(models.audioFile.timeStamp) == targetDate,    #specific date, and the timeframe given
             func.extract('hour', models.audioFile.timeStamp) * 3600 +
             func.extract('minute', models.audioFile.timeStamp) * 60 +
             func.extract('second', models.audioFile.timeStamp) >= int(str(startTime)[0:2]) *3600 + int(str(startTime)[2:4]) * 60  + int(str(startTime)[4:]), 
@@ -186,7 +188,7 @@ def getAudioFiles(
     else:
         ## doesn't cross days!
         query = db.query(           #after start time, before end time
-        models.audioFile.uri,models.audioFile.timeStamp
+        models.audioFile.uri,models.audioFile.timeStamp             #specific date, and the timeframe given
         ).filter(
             func.date(models.audioFile.timeStamp) == targetDate,
             func.extract('hour', models.audioFile.timeStamp) * 3600 +
