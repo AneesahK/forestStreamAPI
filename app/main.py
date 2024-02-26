@@ -42,10 +42,10 @@ async def initialize_dbAudio(app: FastAPI):
         # doesn't consider deletion of tracks and then addiiton, so will treat as number
         # if you do, delete whole table
         for sound in songs:
-            stringS = sound.replace(".WAV", "").split("_")
-            offsetTime = int(stringS[2]) - 10
+            stringS = sound.replace(".wav", "").split("_")
+            offsetTime = int(stringS[2]) - 1
             timeStampS = datetime.datetime(int(stringS[0][:4]), int(stringS[0][4:6]), int(stringS[0][6:]), int(stringS[1][:2]), int(stringS[1][2:4]), int(stringS[1][4:]))
-            timeStampS = timeStampS + datetime.timedelta(seconds=offsetTime)    #Change this if we change to minute files
+            timeStampS = timeStampS + datetime.timedelta(minutes=offsetTime)    #Change this if we change to minute files
             locationS = stringS[3]
 
             if db.query(models.audioFile).filter_by(uri="/audio/{}".format(sound)).count() == 0:
@@ -138,12 +138,14 @@ def getAudioFiles(
 
 
         if len(query)==0:   #Alison's random feature
+            print("not found")
             random_entry = db.query(models.audioFile).order_by(func.random()).first()
             if not random_entry:
                 return "no entries in audio DB"
             timeString = (random_entry.timeStamp.strftime("%H%M%S"))
             startTime = timeString
         else:
+            print("found")
             emptyQuery = False
     
     if differentDays and len(query)>1:
