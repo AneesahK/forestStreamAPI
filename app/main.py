@@ -144,6 +144,7 @@ def getAudioFiles(
                 return "no entries in audio DB"
             timeString = (random_entry.timeStamp.strftime("%H%M%S"))
             startTime = timeString
+            locationG = random_entry.location
         else:
             print("found")
             emptyQuery = False
