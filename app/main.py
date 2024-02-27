@@ -5,6 +5,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 from fastapi.responses import FileResponse
 
+# github
+
 from contextlib import asynccontextmanager
 import os
 import datetime
@@ -267,6 +269,30 @@ def home(
     result = {"count": obj.count, "imageUri":obj.imageUri, "textUri":obj.textUri}
     
     return json.dumps(result)     #list
+
+@app.get("/getRandomSvg")    #gives whole branch, #CHANGE THIS SOPHIE
+def randomSvg(
+    db: Session = Depends(get_db)   #access to db session
+):
+    cate = 1    #hard coded to 1, 1 will always be Symbols
+    #prizeCount needs to be random
+    with open('category.json') as f:
+        d = json.load(f)
+        if str(cate) in d:
+            categoryWord = d[str(cate)]
+        else:
+            return "Category not valid, check JSON, 1 should be Symbols"
+    
+    query = db.query(
+        models.storyFile
+        ).filter(
+            models.storyFile.category==categoryWord
+            ).order_by(func.random()).first()     #gets random image
+    
+    result = {"imageUri":query.imageUri}
+    
+    return json.dumps(result)     #list
+
 
 @app.get("/")
 def home(
