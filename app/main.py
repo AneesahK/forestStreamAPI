@@ -257,7 +257,7 @@ def numStory(db: Session = Depends(get_db)):
                     models.storyFile.category==name
                     ).all()
             biggest = max(query)[0]
-            typ = {"category":k, "number":biggest}  #this all under assumption
+            typ = {"category":int(k), "number":biggest}  #this all under assumption
             final["numStories"].append(typ)
 
     return json.dumps(final)
