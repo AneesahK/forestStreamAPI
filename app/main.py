@@ -117,6 +117,9 @@ def getAudioFiles(
 
         start = datetime.datetime.now()
         start = start.replace(hour=int(str(startTime)[0:2]), minute=int(str(startTime)[2:4]), second=int(str(startTime)[4:]), microsecond=0)
+        if duration==0:
+            duration = 5
+            print("duration is 0")
         end = start + datetime.timedelta(minutes=duration)  #adding minutes
         endString = end.strftime('%Y-%m-%d %H%M%S')
         endString = endString.split(" ")[1]
