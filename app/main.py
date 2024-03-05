@@ -210,7 +210,6 @@ def getAudioFiles(
     for q in query:
         result["audioChunks"].append(q[0]) # add uri to audioChunks
     result = json.dumps(result)
-    # print(result)
     return result
 
 @app.get("/getAllStory")    #gives whole branch
@@ -240,6 +239,25 @@ def home(
         result["stories"].append(a)
     
     return json.dumps(result)       #returns a dict with key as prize count, and value is list of uris associated
+
+@app.get("/getNumStory")
+def numStory(db: Session = Depends(get_db)):
+    final = {"numStories":[]}
+    with open('category.json') as f:
+        categoryjson = json.load(f)
+        category = categoryjson.keys()
+        for k in category:
+            name = categoryjson[k]  #name of branch
+            query = db.query(
+                models.storyFile.count
+                ).filter(
+                    models.storyFile.category==name
+                    ).all()
+            biggest = max(query)[0]
+            typ = {"category":k, "number":biggest}  #this all under assumption
+            final["numStories"].append(typ)
+
+    return json.dumps(final)
 
 @app.get("/getAStory")    #gives whole branch, #CHANGE THIS SOPHIE
 def home(
